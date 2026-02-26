@@ -30,7 +30,7 @@ This project implements the **Deep Distance Transform (DDT)** method for individ
 
 3. **Watershed Segmentation** — At inference time, local maxima in the predicted distance field serve as crown seeds. Watershed flooding from these seeds delineates individual crown polygons, even for touching/overlapping canopies.
 
-This approach was originally developed by [Hickman et al. (2021)](https://doi.org/10.1016/j.rse.2021.112641) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
+This approach was originally developed by [Schindler et al. (2025)](https://doi.org/10.1016/j.ophoto.2025.100095) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
 
 ```
 RGB Aerial Image → U-Net → Predicted Distance Transform → Watershed → Crown Polygons (GeoPackage)
