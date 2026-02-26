@@ -1,0 +1,65 @@
+# ═══════════════════════════════════════════════════════════════
+# Edmonds Urban Tree Crown Detection — Default Configuration
+# ═══════════════════════════════════════════════════════════════
+# Override any value by copying this file and passing --config
+
+# ── Paths ─────────────────────────────────────────────────────
+photos_dir:      "data/photos"          # *_rgb.tif files
+polygons_dir:    "data/polygons"        # matching .shp files
+labels_dir:      "data/labels"          # generated DTM rasters
+tiles_dir:       "data/tiles"           # 512×512 paired tiles
+checkpoint_dir:  "checkpoints"
+inference_dir:   "outputs/inference"
+reports_dir:     "outputs/reports"
+
+boundary_path:   "data/boundary/Edmonds_Boundary.shp"
+hydro_path:      null                   # optional hydrography layer
+full_image_path: null                   # full city raster for inference
+
+# ── CRS & Resolution ─────────────────────────────────────────
+target_crs:       "EPSG:3857"
+expected_res_cm:  7.5
+
+# ── Preprocessing ─────────────────────────────────────────────
+small_area_threshold_m2: 0.5            # slivers below this are dropped
+
+# ── Tiling ────────────────────────────────────────────────────
+tile_size:              512             # pixels
+stride:                 512             # no overlap for training
+min_crown_frac:         0.00            # minimum crown coverage per tile
+negative_sample_rate:   0.15            # fraction of empty tiles to keep
+test_frac:              0.20            # 80/20 train/test split
+random_seed:            42
+
+# ── Model Architecture ────────────────────────────────────────
+encoder:          "resnet101"
+encoder_weights:  "imagenet"
+decoder_channels: [1024, 512, 256, 128, 64]
+decoder_dropout:  0.3
+
+# ── Training ──────────────────────────────────────────────────
+k_folds:              5
+epochs:               100
+batch_size:           30                # A100 40GB — reduce to 8 for Colab
+lr:                   0.0001
+lr_patience:          8
+lr_factor:            0.5
+early_stop_patience:  25
+l1_lambda:            0.000001
+warmup_epochs:        5
+num_workers:          16                # reduce to 2 for Colab
+save_every:           10
+
+# ── Evaluation & Watershed ────────────────────────────────────
+min_distance:         30                # px between watershed seeds
+dtm_threshold:        10.0              # DTM value threshold for crown
+min_crown_area_m2:    2.0               # drop crowns smaller than this
+iou_threshold:        0.5               # IoU threshold for TP matching
+size_small_max_m2:    4.9               # small/medium boundary
+size_medium_max_m2:   15.9              # medium/large boundary
+
+# ── Full-Image Inference ──────────────────────────────────────
+infer_stride:     256                   # 50% overlap for smoother output
+infer_batch_size: 160                   # A100 — reduce to 32 for Colab
+chunk_size:       2048                  # watershed processing chunk size
+chunk_border:     300                   # overlap between chunks
