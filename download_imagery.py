@@ -245,17 +245,26 @@ def create_session(max_retries=5):
     return session
 
 
-def download_single_tile(session, service_name, zoom, row, col, timeout=30):
-    """Download one tile → (row, col, rgb_array|None)."""
+def download_single_tile(session, service_name, zoom, row, col, timeout=30, max_attempts=3):
+    """Download one tile with retries → (row, col, rgb_array|None)."""
     url = f"{BASE_URL}/{service_name}/MapServer/tile/{zoom}/{row}/{col}"
-    try:
-        resp = session.get(url, timeout=timeout)
-        if resp.status_code == 200 and len(resp.content) > 200:
-            img = Image.open(io.BytesIO(resp.content)).convert("RGB")
-            return (row, col, np.array(img))
-        return (row, col, None)
-    except Exception:
-        return (row, col, None)
+    for attempt in range(max_attempts):
+        try:
+            resp = session.get(url, timeout=timeout)
+            if resp.status_code == 200 and "image" in resp.headers.get("Content-Type", ""):
+                img = Image.open(io.BytesIO(resp.content)).convert("RGB")
+                return (row, col, np.array(img))
+            elif resp.status_code == 404:
+                # Tile doesn't exist in this service — no point retrying
+                return (row, col, None)
+            elif resp.status_code == 429:
+                time.sleep(2 ** attempt)
+                continue
+            return (row, col, None)
+        except Exception:
+            time.sleep(1)
+            continue
+    return (row, col, None)
 
 
 # ══════════════════════════════════════════════════════════════
@@ -302,55 +311,52 @@ def download_and_mosaic(year, service_name, grid, output_path, workers=16):
 
     session = create_session()
     total_downloaded = 0
-    total_failed = 0
+    total_missing = 0  # 404s — tile doesn't exist in service
+    total_failed = 0   # actual errors
 
     print(f"\n  Writing: {output_path}")
     print(f"  Processing {n_rows} tile-rows × {n_cols} tile-cols...")
+
+    BATCH_SIZE = 20  # Download this many tiles at a time within a row
 
     with rasterio.open(output_path, "w", **profile) as dst:
         for tile_row_idx, tile_row in enumerate(
             range(grid["row_min"], grid["row_max"] + 1)
         ):
-            # Download all columns for this tile-row in parallel
-            row_tiles = [(tile_row, col) for col in
-                         range(grid["col_min"], grid["col_max"] + 1)]
-
-            row_data = {}
-            with ThreadPoolExecutor(max_workers=min(workers, n_cols)) as executor:
-                futures = {
-                    executor.submit(
-                        download_single_tile, session, service_name,
-                        zoom, r, c
-                    ): (r, c)
-                    for r, c in row_tiles
-                }
-                for future in as_completed(futures):
-                    r, c, arr = future.result()
-                    if arr is not None:
-                        row_data[(r, c)] = arr
-                        total_downloaded += 1
-                    else:
-                        total_failed += 1
-
-            # Assemble this tile-row into a strip: (TILE_PX, img_w, 3)
+            # Assemble strip for this tile-row
             strip = np.zeros((TILE_PX, img_w, 3), dtype=np.uint8)
 
-            for col_idx, col in enumerate(
-                range(grid["col_min"], grid["col_max"] + 1)
-            ):
-                key = (tile_row, col)
-                if key in row_data:
-                    arr = row_data[key]
-                    x_start = col_idx * TILE_PX
-                    # Handle tiles that might not be exactly 256×256
-                    h_px = min(arr.shape[0], TILE_PX)
-                    w_px = min(arr.shape[1], TILE_PX)
-                    strip[:h_px, x_start:x_start + w_px, :] = arr[:h_px, :w_px, :]
+            # Process columns in batches to avoid overwhelming server
+            all_cols = list(range(grid["col_min"], grid["col_max"] + 1))
 
-            # Write strip to raster (bands-first for rasterio)
-            y_start = tile_row_idx * TILE_PX + 1  # 1-indexed for rasterio window
+            for batch_start in range(0, len(all_cols), BATCH_SIZE):
+                batch_cols = all_cols[batch_start:batch_start + BATCH_SIZE]
+
+                with ThreadPoolExecutor(max_workers=min(workers, len(batch_cols))) as executor:
+                    futures = {
+                        executor.submit(
+                            download_single_tile, session, service_name,
+                            zoom, tile_row, c
+                        ): c
+                        for c in batch_cols
+                    }
+                    for future in as_completed(futures):
+                        r, c, arr = future.result()
+                        if arr is not None:
+                            col_idx = c - grid["col_min"]
+                            x_start = col_idx * TILE_PX
+                            h_px = min(arr.shape[0], TILE_PX)
+                            w_px = min(arr.shape[1], TILE_PX)
+                            strip[:h_px, x_start:x_start + w_px, :] = arr[:h_px, :w_px, :]
+                            total_downloaded += 1
+                        else:
+                            total_missing += 1
+
+                # Small pause between batches
+                time.sleep(0.2)
+
+            # Write strip to raster
             window = rasterio.windows.Window(0, tile_row_idx * TILE_PX, img_w, TILE_PX)
-
             for band in range(3):
                 dst.write(strip[:, :, band], band + 1, window=window)
 
@@ -358,14 +364,12 @@ def download_and_mosaic(year, service_name, grid, output_path, workers=16):
             pct = 100 * (tile_row_idx + 1) / n_rows
             print(f"\r  [{year}] Row {tile_row_idx+1}/{n_rows} "
                   f"({pct:.0f}%) | "
-                  f"Downloaded: {total_downloaded:,} | "
-                  f"Failed: {total_failed}", end="", flush=True)
+                  f"OK: {total_downloaded:,} | "
+                  f"No tile: {total_missing:,}", end="", flush=True)
 
-            # Brief pause between rows to be respectful to the server
-            time.sleep(0.1)
-
+    pct_ok = 100 * total_downloaded / (total_downloaded + total_missing) if (total_downloaded + total_missing) > 0 else 0
     print(f"\n  ✓ Complete: {total_downloaded:,} tiles downloaded, "
-          f"{total_failed:,} failed")
+          f"{total_missing:,} outside coverage ({pct_ok:.0f}% coverage)")
 
     # Report file size
     size_gb = Path(output_path).stat().st_size / 1e9
