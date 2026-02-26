@@ -30,7 +30,7 @@ This project implements the **Deep Distance Transform (DDT)** method for individ
 
 3. **Watershed Segmentation** — At inference time, local maxima in the predicted distance field serve as crown seeds. Watershed flooding from these seeds delineates individual crown polygons, even for touching/overlapping canopies.
 
-This approach was originally developed by [Hickman et al. (2021)](https://doi.org/10.1016/j.rse.2021.112641) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
+This approach was originally developed by [Schindler et al. (2025)](https://doi.org/10.1016/j.ophoto.2025.100095) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
 
 ```
 RGB Aerial Image → U-Net → Predicted Distance Transform → Watershed → Crown Polygons (GeoPackage)
@@ -190,7 +190,7 @@ Detection evaluated with IoU ≥ 0.5 matching after watershed segmentation:
 | City boundary | Shapefile (Polygon) | Any (auto-reprojected) | — |
 | Full city image | GeoTIFF (RGB, uint8) | EPSG:3857 | 7.5 cm |
 
-Training imagery is 2020 aerial photography provided by the City of Edmonds. Crown annotations were hand-digitized in QGIS from the 7.5 cm imagery.
+Training imagery is 2020 aerial photography provided by the City of Edmonds. Crown annotations were hand-digitized in ARCGIS from the 7.5 cm imagery.
 
 ## Output Formats
 
@@ -231,13 +231,11 @@ dtm_threshold: 10.0   # ↑ stricter crown boundary, ↓ captures more edge pixe
 
 ## References
 
-- Hickman, S., et al. (2021). "Individual tree crown delineation from airborne laser scanning for diseased larch tree detection." *Remote Sensing of Environment*, 263, 112641.
-- Ball, J.G.C., et al. (2023). "Accurate delineation of individual tree crowns in tropical forests from aerial RGB imagery using Mask R-CNN." *Remote Sensing in Ecology and Conservation*.
-- detectree2: [GitHub](https://github.com/PatBall1/detectree2) — Deep learning for tree crown delineation
+- Schindler, J., Sun, Z., Xue, B., & Zhang, M. (2025). Efficient tree mapping through Deep Distance Transform (DDT) learning. ISPRS Open Journal of Photogrammetry and Remote Sensing, 15, 100095. https://doi.org/10.1016/j.ophoto.2025.100095
 
 ## Author
 
-**Kam** — Environmental Specialist & GIS Analyst
+**Kameron Eck** — Environmental Specialist & GIS Analyst
 Edmonds Climate Advisory Board
 
 M.S. Culture & Environmental Resource Management (GIS Certification), Central Washington University
