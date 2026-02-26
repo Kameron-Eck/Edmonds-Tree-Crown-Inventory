@@ -30,7 +30,7 @@ This project implements the **Deep Distance Transform (DDT)** method for individ
 
 3. **Watershed Segmentation** — At inference time, local maxima in the predicted distance field serve as crown seeds. Watershed flooding from these seeds delineates individual crown polygons, even for touching/overlapping canopies.
 
-This approach was originally developed by [Schindler et al. (2025)](https://doi.org/10.1016/j.ophoto.2025.100095) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
+This approach was originally developed by [Hickman et al. (2021)](https://doi.org/10.1016/j.rse.2021.112641) for tropical forests and has been adapted here for Pacific Northwest urban forest conditions.
 
 ```
 RGB Aerial Image → U-Net → Predicted Distance Transform → Watershed → Crown Polygons (GeoPackage)
@@ -134,7 +134,7 @@ With only ~530 annotated tiles across 5 sites, a single train/test split risks o
 Training sites vary dramatically in size (Forest_1: 276 tiles, Forest_2: 39 tiles). Without balancing, the model would overfit to the largest site. `WeightedRandomSampler` ensures each site contributes equally per epoch.
 
 **Why streaming inference?**
-The full Edmonds image is ~26,000 × 35,000 pixels (~3.5 GB). Loading it entirely into memory is impractical. The pipeline reads tiles on-the-fly, predicts in batches, and writes center crops directly to a BigTIFF with LZW compression.
+The full Edmonds image is ~17.5 GB on disk and balloons to ~52 GB when decompressed into memory as a 3-band array. Loading it entirely is impractical on any single machine. The pipeline reads tiles on-the-fly, predicts in batches, and writes center crops directly to a BigTIFF with LZW compression — peak memory stays under 4 GB regardless of image size.
 
 ## Model Architecture
 
