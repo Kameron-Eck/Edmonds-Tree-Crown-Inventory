@@ -9,8 +9,8 @@ Steps:
     1. Build reference color profile from 2020 training image
     2. For each year's image:
        a. Apply per-band histogram matching to reference
-       b. Run streaming inference → predicted DTM raster
-       c. Watershed segmentation → crown GeoPackage
+       b. Run streaming inference â†’ predicted DTM raster
+       c. Watershed segmentation â†’ crown GeoPackage
     3. Generate per-year summary statistics
 
 Usage:
@@ -80,9 +80,9 @@ YEAR_INFO = {
 }
 
 
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # CONFIGURATION
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 DEFAULT_CONFIG = {
     "encoder": "resnet101",
@@ -109,20 +109,20 @@ def load_config(config_path=None):
     return cfg
 
 
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # HISTOGRAM MATCHING
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def build_reference_profile(ref_path, n_samples=300, chip_size=512, seed=42):
     """Sample random chips from the 2020 reference image to build per-band
     cumulative distribution functions (CDFs) for histogram matching.
 
     Returns:
-        ref_cdfs: list of 3 arrays, each shape (256,) — the CDF for R, G, B
+        ref_cdfs: list of 3 arrays, each shape (256,) â€” the CDF for R, G, B
         ref_means: per-band means for quick QA
     """
-    print(f"\n── Building reference color profile from 2020 image ──")
-    print(f"  Sampling {n_samples} × {chip_size}×{chip_size} chips...")
+    print(f"\nâ”€â”€ Building reference color profile from 2020 image â”€â”€")
+    print(f"  Sampling {n_samples} Ã— {chip_size}Ã—{chip_size} chips...")
 
     rng = np.random.default_rng(seed)
     band_pixels = [[], [], []]  # collect pixel values per band
@@ -157,7 +157,7 @@ def build_reference_profile(ref_path, n_samples=300, chip_size=512, seed=42):
         all_vals = np.concatenate(band_pixels[b])
         ref_means.append(float(all_vals.mean()))
 
-        # Histogram → CDF
+        # Histogram â†’ CDF
         hist, _ = np.histogram(all_vals, bins=256, range=(0, 256))
         cdf = hist.cumsum().astype(np.float64)
         cdf = cdf / cdf[-1]  # normalize to [0, 1]
@@ -231,9 +231,9 @@ def apply_lut_to_tile(tile, luts):
     return out
 
 
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # WATERSHED (same as pipeline.py)
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def _process_watershed_chunk(args):
     """Worker: watershed on one spatial chunk of the DTM."""
@@ -313,9 +313,9 @@ def _process_watershed_chunk(args):
     return records
 
 
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # INFERENCE FOR ONE YEAR
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def infer_one_year(year, img_path, model, cfg, output_dir,
                    luts=None, device=None):
@@ -355,7 +355,7 @@ def infer_one_year(year, img_path, model, cfg, output_dir,
         px_x, px_y = tf.a, abs(tf.e)
         px_area = px_x * px_y
 
-    print(f"\n  [{year}] Inference: {w}×{h} px | "
+    print(f"\n  [{year}] Inference: {w}Ã—{h} px | "
           f"res={px_x*100:.1f} cm | histmatch={'yes' if luts else 'no'}")
 
     infer_tf = A.Compose([
@@ -375,11 +375,11 @@ def infer_one_year(year, img_path, model, cfg, output_dir,
 
     # If image is smaller than tile_size, handle specially
     if h < tile_size or w < tile_size:
-        print(f"  [{year}] WARNING: Image smaller than tile_size ({h}×{w} < {tile_size})")
+        print(f"  [{year}] WARNING: Image smaller than tile_size ({h}Ã—{w} < {tile_size})")
         print(f"  [{year}] Padding image to minimum size")
         origins = [(0, 0)]
 
-    # Streaming inference → DTM
+    # Streaming inference â†’ DTM
     dtm_profile = {
         "driver": "GTiff", "dtype": "float32", "width": w, "height": h,
         "count": 1, "crs": crs, "transform": tf, "compress": "lzw",
@@ -442,7 +442,7 @@ def infer_one_year(year, img_path, model, cfg, output_dir,
     dtm_size_mb = dtm_out.stat().st_size / 1e6
     print(f"  [{year}] DTM complete: {dtm_size_mb:.0f} MB in {infer_time:.0f}s")
 
-    # Watershed → crowns
+    # Watershed â†’ crowns
     print(f"  [{year}] Watershed segmentation...")
     t0 = time.time()
     n_workers = min(8, multiprocessing.cpu_count())
@@ -525,9 +525,9 @@ def infer_one_year(year, img_path, model, cfg, output_dir,
     }
 
 
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 # MAIN
-# ═══════════════════════════════════════════════════════════════════
+# â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•â•
 
 def main():
     parser = argparse.ArgumentParser(
@@ -562,16 +562,28 @@ def main():
     print(f"  Histogram matching: {'OFF' if args.no_histmatch else 'ON'}")
     print("=" * 60)
 
-    # ── Validate inputs ──
+    # â”€â”€ Validate inputs â”€â”€
     ref_path = cfg.get("full_image_path")
     if not ref_path or not Path(ref_path).exists():
         print("ERROR: full_image_path not set or file not found in config.")
         print("  This is needed as the 2020 reference for histogram matching.")
         return
 
-    ckpt_path = Path(cfg["checkpoint_dir"]) / "ddt_best_global.pt"
-    if not ckpt_path.exists():
-        print(f"ERROR: Checkpoint not found: {ckpt_path}")
+    # Try multiple checkpoint naming conventions
+    ckpt_dir = Path(cfg["checkpoint_dir"])
+    ckpt_candidates = [
+        ckpt_dir / "ddt_best_v5_global.pt",   # your current naming
+        ckpt_dir / "ddt_best_global.pt",       # pipeline.py default
+        ckpt_dir / "ddt_latest.pt",            # fallback
+    ]
+    ckpt_path = None
+    for candidate in ckpt_candidates:
+        if candidate.exists():
+            ckpt_path = candidate
+            break
+    if ckpt_path is None:
+        print(f"ERROR: No checkpoint found in {ckpt_dir}")
+        print(f"  Tried: {[c.name for c in ckpt_candidates]}")
         return
 
     # Find available imagery
@@ -589,14 +601,14 @@ def main():
 
     print(f"\n  Found imagery for {len(available)} years: {sorted(available.keys())}")
 
-    # ── Build reference profile ──
+    # â”€â”€ Build reference profile â”€â”€
     ref_cdfs = None
     if not args.no_histmatch:
         ref_cdfs, ref_means = build_reference_profile(
             ref_path, n_samples=args.ref_samples)
 
-    # ── Load model ──
-    print(f"\n── Loading model from {ckpt_path.name} ──")
+    # â”€â”€ Load model â”€â”€
+    print(f"\nâ”€â”€ Loading model from {ckpt_path.name} â”€â”€")
     model = smp.Unet(
         encoder_name=cfg["encoder"], encoder_weights=None,
         decoder_channels=tuple(cfg["decoder_channels"]),
@@ -614,7 +626,7 @@ def main():
 
     print(f"  Model loaded: {sum(p.numel() for p in model.parameters()):,} parameters")
 
-    # ── Process each year ──
+    # â”€â”€ Process each year â”€â”€
     all_results = []
     for year in sorted(available.keys(), reverse=True):  # newest first
         img_path = available[year]
@@ -650,7 +662,7 @@ def main():
         torch.cuda.empty_cache()
         gc.collect()
 
-    # ── Summary ──
+    # â”€â”€ Summary â”€â”€
     if all_results:
         print(f"\n{'='*60}")
         print("  TEMPORAL SUMMARY")
@@ -662,7 +674,7 @@ def main():
 
         print(f"\n  {'Year':<6} {'Crowns':>10} {'Canopy (ha)':>12} "
               f"{'Cover %':>8} {'Time (min)':>10}")
-        print(f"  {'─'*6} {'─'*10} {'─'*12} {'─'*8} {'─'*10}")
+        print(f"  {'â”€'*6} {'â”€'*10} {'â”€'*12} {'â”€'*8} {'â”€'*10}")
         for _, row in summary.iterrows():
             total_time = (row.get("infer_time", 0)) / 60
             print(f"  {int(row['year']):<6} {int(row['crowns']):>10,} "
@@ -672,7 +684,7 @@ def main():
         print(f"\n  Results saved: {summary_path}")
         print(f"  Per-year outputs: {output_dir}")
 
-    print("\n✓ Temporal inference complete.")
+    print("\nâœ“ Temporal inference complete.")
 
 
 if __name__ == "__main__":
