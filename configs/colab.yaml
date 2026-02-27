@@ -1,0 +1,15 @@
+# Colab Configuration
+photos_dir:      "/content/drive/MyDrive/treedata/photos"
+polygons_dir:    "/content/drive/MyDrive/treedata/polygons"
+labels_dir:      "/content/drive/MyDrive/treedata/labels"
+tiles_dir:       "/content/drive/MyDrive/treedata/tiles"
+checkpoint_dir:  "/content/drive/MyDrive/treedata/checkpoints"
+inference_dir:   "/content/drive/MyDrive/treedata/inference"
+reports_dir:     "/content/drive/MyDrive/treedata/reports"
+boundary_path:   "/content/drive/MyDrive/treedata/City Boundry/Edmonds Boundry.shp"
+full_image_path: "/content/drive/MyDrive/treedata/temporal_imagery/edmonds_2020_image.tif"
+encoder: "resnet101"
+decoder_channels: [1024, 512, 256, 128, 64]
+batch_size:       8
+infer_batch_size: 32
+num_workers:      2
