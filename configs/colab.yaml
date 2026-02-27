@@ -11,5 +11,5 @@ full_image_path: "/content/drive/MyDrive/treedata/temporal_imagery/edmonds_2020_
 encoder: "resnet101"
 decoder_channels: [1024, 512, 256, 128, 64]
 batch_size:       8
-infer_batch_size: 32
+infer_batch_size: 128
 num_workers:      2
